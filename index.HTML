@@ -104,12 +104,6 @@
             overflow: hidden;
         }
         .hero-content { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; }
-        .hero-logo {
-            width: 120px; height: 120px; border-radius: 50%; background: var(--white);
-            margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;
-            border: 4px solid var(--secondary); box-shadow: 0 8px 30px rgba(0,0,0,0.2); overflow: hidden; padding: 10px;
-        }
-        .hero-logo img { width: 100%; height: 100%; object-fit: contain; }
         .hero h2 { font-size: clamp(28px, 5vw, 48px); font-weight: 700; font-family: 'Playfair Display', serif; margin-bottom: 5px; }
         .hero .tagline { font-size: clamp(18px, 2.5vw, 28px); color: var(--secondary); font-weight: 600; margin-bottom: 15px; letter-spacing: 2px; }
         .hero-values { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 15px 0 20px; }
@@ -244,7 +238,7 @@
         .status-pending { background: #fff3e0; color: #e65100; }
         .status-inactive { background: #fbe9e7; color: var(--danger); }
 
-        /* ----- FOOTER (centered) ----- */
+        /* ----- FOOTER ----- */
         .footer {
             background: var(--primary);
             color: var(--white);
@@ -257,7 +251,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 30px;
-            text-align: center; /* center content inside columns */
+            text-align: center;
         }
         .footer h3 {
             color: var(--secondary);
@@ -385,7 +379,6 @@
             .gallery-grid { grid-template-columns: 1fr 1fr; }
             .header-logo h1 { font-size: 16px; }
             .board-card .name { font-size: 18px; }
-            .hero-logo { width: 80px; height: 80px; }
         }
         .hidden { display: none !important; }
         .text-center { text-align: center; }
@@ -424,6 +417,7 @@
         </nav>
     </div>
 </header>
+
 <!-- HERO -->
 <section class="hero" id="heroSection">
     <div class="hero-content">
@@ -584,7 +578,7 @@
     </section>
 </main>
 
-<!-- FOOTER (centered) -->
+<!-- FOOTER -->
 <footer class="footer">
     <div class="footer-container">
         <div>
@@ -721,7 +715,8 @@
     <img id="lightboxImage" src="" alt="Gallery Image">
 </div>
 
-<!-- Firebase + Logic -->
+<!-- ============================================================ -->
+<!-- JAVASCRIPT – Firebase + Local Storage -->
 <script type="module">
     // Import Firebase SDK
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -741,7 +736,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Expose DB functions to global scope for inline handlers
+    // Expose Firebase to window for use in inline handlers
     window.__firebaseDB = db;
     window.__firebaseRef = ref;
     window.__firebaseSet = set;
@@ -768,11 +763,73 @@
     } catch (error) {
         console.warn("⚠️ Firebase connection error:", error);
     }
-</script>
 
-<script>
-    // ---------- LOCAL STORAGE + FIREBASE SYNC ----------
-    const DB = {
+    // Load data from Firebase on startup and keep in sync
+    async function loadFromFirebase() {
+        try {
+            const collections = ['members', 'announcements', 'cme', 'gallery'];
+            for (const col of collections) {
+                const dbRef = ref(window.__firebaseDB, 'afi/' + col);
+                const snapshot = await get(dbRef);
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    if (Array.isArray(data) && data.length > 0) {
+                        localStorage.setItem('afi_' + col, JSON.stringify(data));
+                        console.log(`✅ Loaded ${data.length} ${col} from Firebase`);
+                    }
+                }
+            }
+            // Refresh UI after loading
+            renderHome();
+            renderPublicMembers();
+            renderPublicGallery();
+            renderPublicNoticesFull();
+            renderPublicCME();
+        } catch(e) { 
+            console.log('⚠️ Firebase load error, using local storage:', e.message);
+        }
+    }
+
+    // Initial load after a short delay
+    setTimeout(loadFromFirebase, 1000);
+
+    // Listen for real-time updates on all collections
+    function setupRealtimeListeners() {
+        const collections = ['members', 'announcements', 'cme', 'gallery'];
+        collections.forEach(col => {
+            const dbRef = ref(window.__firebaseDB, 'afi/' + col);
+            onValue(dbRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    if (Array.isArray(data)) {
+                        localStorage.setItem('afi_' + col, JSON.stringify(data));
+                        console.log(`🔄 Realtime update: ${col} (${data.length} items)`);
+                        // Refresh UI
+                        renderHome();
+                        renderPublicMembers();
+                        renderPublicGallery();
+                        renderPublicNoticesFull();
+                        renderPublicCME();
+                        if (document.getElementById('adminOverlay').classList.contains('active')) {
+                            renderAdminDashboard();
+                            renderAdminMembers();
+                            renderAdminAnnouncements();
+                            renderAdminCME();
+                            renderAdminGallery();
+                        }
+                    }
+                }
+            }, (error) => {
+                console.warn(`⚠️ Realtime listener error for ${col}:`, error);
+            });
+        });
+    }
+
+    // Setup realtime listeners after initial load
+    setTimeout(setupRealtimeListeners, 2000);
+
+    // Make sure DB functions are available globally
+    window.DB = {
         get: function(key) {
             try { return JSON.parse(localStorage.getItem('afi_' + key)) || []; }
             catch { return []; }
@@ -782,42 +839,29 @@
             // Sync to Firebase
             try {
                 const db = window.__firebaseDB;
-                const ref = window.__firebaseRef;
+                const refFn = window.__firebaseRef;
                 const setFn = window.__firebaseSet;
-                if (db && ref && setFn) {
-                    setFn(ref(db, 'afi/' + key), data).catch(() => {});
+                if (db && refFn && setFn) {
+                    setFn(refFn(db, 'afi/' + key), data)
+                        .then(() => console.log(`✅ Synced ${key} to Firebase`))
+                        .catch((e) => console.warn(`⚠️ Failed to sync ${key} to Firebase:`, e));
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.warn('⚠️ Firebase sync error:', e);
+            }
         },
         generateId: function() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
         }
     };
 
-    // Load from Firebase into localStorage on startup
-    async function loadFromFirebase() {
-        try {
-            const db = window.__firebaseDB;
-            const ref = window.__firebaseRef;
-            const getFn = window.__firebaseGet;
-            const childFn = window.__firebaseChild;
-            if (!db || !ref || !getFn || !childFn) return;
-            const collections = ['members', 'announcements', 'cme', 'gallery'];
-            for (const col of collections) {
-                const snapshot = await getFn(childFn(ref(db), 'afi/' + col));
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    if (Array.isArray(data) && data.length > 0) {
-                        localStorage.setItem('afi_' + col, JSON.stringify(data));
-                    }
-                }
-            }
-            console.log('✅ Firebase data loaded into localStorage');
-        } catch(e) { console.log('Firebase load skipped', e); }
-    }
-    setTimeout(loadFromFirebase, 500);
+    console.log('✅ Firebase + Local Storage sync ready');
+</script>
 
-    // ---------- WEBSITE LOGIC ----------
+<script>
+    // --------------------------------------------------------------
+    // WEBSITE LOGIC (using window.DB)
+    // --------------------------------------------------------------
     let isAdmin = false;
     let currentPage = 'home';
     let selectedFile = null;
@@ -845,10 +889,10 @@
     }
 
     function renderHome() {
-        const members = DB.get('members');
-        const notices = DB.get('announcements');
-        const cme = DB.get('cme');
-        const gallery = DB.get('gallery');
+        const members = window.DB.get('members');
+        const notices = window.DB.get('announcements');
+        const cme = window.DB.get('cme');
+        const gallery = window.DB.get('gallery');
         document.getElementById('pubMembers').textContent = members.length;
         document.getElementById('pubNotices').textContent = notices.length;
         document.getElementById('pubCME').textContent = cme.length;
@@ -873,7 +917,7 @@
 
     function renderPublicMembers() {
         const container = document.getElementById('publicMembersTable');
-        const members = DB.get('members');
+        const members = window.DB.get('members');
         if (members.length === 0) {
             container.innerHTML = '<p class="text-center" style="padding:30px;color:var(--gray);">No members registered yet.</p>';
             return;
@@ -900,7 +944,7 @@
 
     function renderPublicGallery() {
         const container = document.getElementById('publicGallery');
-        const gallery = DB.get('gallery');
+        const gallery = window.DB.get('gallery');
         if (gallery.length === 0) {
             container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--gray);">No images in gallery.</div>';
             return;
@@ -930,7 +974,7 @@
 
     function renderPublicNoticesFull() {
         const container = document.getElementById('publicNoticesFull');
-        const notices = DB.get('announcements');
+        const notices = window.DB.get('announcements');
         if (notices.length === 0) {
             container.innerHTML = '<p style="text-align:center;padding:30px;color:var(--gray);">No announcements yet.</p>';
             return;
@@ -950,7 +994,7 @@
 
     function renderPublicCME() {
         const container = document.getElementById('publicCME');
-        const cme = DB.get('cme');
+        const cme = window.DB.get('cme');
         if (cme.length === 0) {
             container.innerHTML = '<p style="text-align:center;padding:30px;color:var(--gray);">No CME programs scheduled.</p>';
             return;
@@ -1003,7 +1047,7 @@
             if (file) {
                 photoBase64 = await compressImage(file, 300, 0.7);
             }
-            const members = DB.get('members');
+            const members = window.DB.get('members');
             if (members.find(m => m.mobile === mobile)) {
                 resp.textContent = '✗ Mobile number already registered!';
                 resp.style.color = 'var(--danger)';
@@ -1019,7 +1063,7 @@
                 return;
             }
             members.push({
-                id: DB.generateId(),
+                id: window.DB.generateId(),
                 name,
                 mobile,
                 qualification,
@@ -1030,7 +1074,7 @@
                 status: 'pending',
                 createdAt: new Date().toISOString()
             });
-            DB.set('members', members);
+            window.DB.set('members', members);
             resp.textContent = '✓ Registration successful! Welcome to AFI.';
             resp.style.color = 'var(--success)';
             this.reset();
@@ -1116,10 +1160,10 @@
     }
 
     function renderAdminDashboard() {
-        document.getElementById('admMembers').textContent = DB.get('members').length;
-        document.getElementById('admAnnouncements').textContent = DB.get('announcements').length;
-        document.getElementById('admCME').textContent = DB.get('cme').length;
-        document.getElementById('admGallery').textContent = DB.get('gallery').length;
+        document.getElementById('admMembers').textContent = window.DB.get('members').length;
+        document.getElementById('admAnnouncements').textContent = window.DB.get('announcements').length;
+        document.getElementById('admCME').textContent = window.DB.get('cme').length;
+        document.getElementById('admGallery').textContent = window.DB.get('gallery').length;
     }
 
     function openAdminMemberForm(data = null) {
@@ -1160,15 +1204,15 @@
             resp.style.color = 'var(--danger)';
             return;
         }
-        let members = DB.get('members');
+        let members = window.DB.get('members');
         if (id) {
             const index = members.findIndex(m => m.id === id);
             if (index !== -1) members[index] = { ...members[index], name, mobile, qualification, regno, address, transaction, status, updatedAt: new Date().toISOString() };
-            DB.set('members', members);
+            window.DB.set('members', members);
             toast('Member updated!', 'success');
         } else {
-            members.push({ id: DB.generateId(), name, mobile, qualification, regno, address, transaction, status, createdAt: new Date().toISOString() });
-            DB.set('members', members);
+            members.push({ id: window.DB.generateId(), name, mobile, qualification, regno, address, transaction, status, createdAt: new Date().toISOString() });
+            window.DB.set('members', members);
             toast('Member added!', 'success');
         }
         document.querySelector('.admin-member-form')?.remove();
@@ -1180,9 +1224,9 @@
 
     function deleteAdminMember(id) {
         if (!confirm('Delete this member permanently?')) return;
-        let members = DB.get('members');
+        let members = window.DB.get('members');
         members = members.filter(m => m.id !== id);
-        DB.set('members', members);
+        window.DB.set('members', members);
         toast('Member deleted.', 'success');
         renderAdminMembers();
         renderPublicMembers();
@@ -1194,7 +1238,7 @@
         const container = document.getElementById('adminMembersTable');
         const form = document.querySelector('.admin-member-form');
         if (form) form.remove();
-        const members = DB.get('members');
+        const members = window.DB.get('members');
         if (members.length === 0) {
             container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--gray);">No members registered.</p>';
             return;
@@ -1240,14 +1284,14 @@
             resp.style.color = 'var(--danger)';
             return;
         }
-        let announcements = DB.get('announcements');
+        let announcements = window.DB.get('announcements');
         if (id) {
             const index = announcements.findIndex(a => a.id === id);
             if (index !== -1) announcements[index] = { ...announcements[index], title, content, category, updatedAt: new Date().toISOString() };
         } else {
-            announcements.push({ id: DB.generateId(), title, content, category, createdAt: new Date().toISOString() });
+            announcements.push({ id: window.DB.generateId(), title, content, category, createdAt: new Date().toISOString() });
         }
-        DB.set('announcements', announcements);
+        window.DB.set('announcements', announcements);
         toast('Announcement saved!', 'success');
         document.querySelector('.admin-announce-form')?.remove();
         renderAdminAnnouncements();
@@ -1258,9 +1302,9 @@
 
     function deleteAdminAnnounce(id) {
         if (!confirm('Delete this announcement?')) return;
-        let announcements = DB.get('announcements');
+        let announcements = window.DB.get('announcements');
         announcements = announcements.filter(a => a.id !== id);
-        DB.set('announcements', announcements);
+        window.DB.set('announcements', announcements);
         toast('Deleted.', 'success');
         renderAdminAnnouncements();
         renderPublicNoticesFull();
@@ -1272,7 +1316,7 @@
         const container = document.getElementById('adminAnnouncementsList');
         const form = document.querySelector('.admin-announce-form');
         if (form) form.remove();
-        const announcements = DB.get('announcements');
+        const announcements = window.DB.get('announcements');
         if (announcements.length === 0) {
             container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--gray);">No announcements.</p>';
             return;
@@ -1326,14 +1370,14 @@
             resp.style.color = 'var(--danger)';
             return;
         }
-        let cme = DB.get('cme');
+        let cme = window.DB.get('cme');
         if (id) {
             const index = cme.findIndex(c => c.id === id);
             if (index !== -1) cme[index] = { ...cme[index], title, description, date, venue, updatedAt: new Date().toISOString() };
         } else {
-            cme.push({ id: DB.generateId(), title, description, date, venue, createdAt: new Date().toISOString() });
+            cme.push({ id: window.DB.generateId(), title, description, date, venue, createdAt: new Date().toISOString() });
         }
-        DB.set('cme', cme);
+        window.DB.set('cme', cme);
         toast('CME saved!', 'success');
         document.querySelector('.admin-cme-form')?.remove();
         renderAdminCME();
@@ -1344,9 +1388,9 @@
 
     function deleteAdminCME(id) {
         if (!confirm('Delete this CME program?')) return;
-        let cme = DB.get('cme');
+        let cme = window.DB.get('cme');
         cme = cme.filter(c => c.id !== id);
-        DB.set('cme', cme);
+        window.DB.set('cme', cme);
         toast('Deleted.', 'success');
         renderAdminCME();
         renderPublicCME();
@@ -1357,7 +1401,7 @@
         const container = document.getElementById('adminCMEList');
         const form = document.querySelector('.admin-cme-form');
         if (form) form.remove();
-        const cme = DB.get('cme');
+        const cme = window.DB.get('cme');
         if (cme.length === 0) {
             container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--gray);">No CME programs.</p>';
             return;
@@ -1420,7 +1464,7 @@
         const id = document.getElementById('admGalleryId').value;
         const title = document.getElementById('admGTitle').value.trim() || 'Gallery Image';
         const file = window._galleryFile;
-        let gallery = DB.get('gallery');
+        let gallery = window.DB.get('gallery');
         if (id) {
             const index = gallery.findIndex(g => g.id === id);
             if (index !== -1) {
@@ -1438,9 +1482,9 @@
                 return;
             }
             const imageBase64 = await compressImage(file, 600, 0.8);
-            gallery.push({ id: DB.generateId(), title, imageBase64, createdAt: new Date().toISOString() });
+            gallery.push({ id: window.DB.generateId(), title, imageBase64, createdAt: new Date().toISOString() });
         }
-        DB.set('gallery', gallery);
+        window.DB.set('gallery', gallery);
         toast('Gallery saved!', 'success');
         document.querySelector('.admin-gallery-form')?.remove();
         window._galleryFile = null;
@@ -1452,9 +1496,9 @@
 
     function deleteAdminGallery(id) {
         if (!confirm('Delete this image?')) return;
-        let gallery = DB.get('gallery');
+        let gallery = window.DB.get('gallery');
         gallery = gallery.filter(g => g.id !== id);
-        DB.set('gallery', gallery);
+        window.DB.set('gallery', gallery);
         toast('Image deleted.', 'success');
         renderAdminGallery();
         renderPublicGallery();
@@ -1465,7 +1509,7 @@
         const container = document.getElementById('adminGalleryGrid');
         const form = document.querySelector('.admin-gallery-form');
         if (form) form.remove();
-        const gallery = DB.get('gallery');
+        const gallery = window.DB.get('gallery');
         if (gallery.length === 0) {
             container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--gray);">No images in gallery.</div>';
             return;
@@ -1549,20 +1593,21 @@
 
     // INIT
     document.addEventListener('DOMContentLoaded', function() {
-        if (DB.get('members').length === 0) {
-            DB.set('members', [
-                { id: DB.generateId(), name: 'Dr. U G Hiremath', mobile: '9448578827', qualification: 'BAMS', regno: 'AFI-001', address: 'Belagavi', status: 'active', createdAt: new Date(Date.now() - 86400000 * 30).toISOString() },
-                { id: DB.generateId(), name: 'Dr. Yogesh Sabnis', mobile: '9343060007', qualification: 'BHMS', regno: 'AFI-002', address: 'Belagavi', status: 'active', createdAt: new Date(Date.now() - 86400000 * 15).toISOString() }
+        // Seed initial data if empty
+        if (window.DB.get('members').length === 0) {
+            window.DB.set('members', [
+                { id: window.DB.generateId(), name: 'Dr. U G Hiremath', mobile: '9448578827', qualification: 'BAMS', regno: 'AFI-001', address: 'Belagavi', status: 'active', createdAt: new Date(Date.now() - 86400000 * 30).toISOString() },
+                { id: window.DB.generateId(), name: 'Dr. Yogesh Sabnis', mobile: '9343060007', qualification: 'BHMS', regno: 'AFI-002', address: 'Belagavi', status: 'active', createdAt: new Date(Date.now() - 86400000 * 15).toISOString() }
             ]);
         }
-        if (DB.get('announcements').length === 0) {
-            DB.set('announcements', [
-                { id: DB.generateId(), title: 'Welcome to AFI Belagavi', content: 'We are excited to announce the official launch of AFI Belagavi Taluka. Join us in our mission to promote AYUSH healthcare.', category: 'General', createdAt: new Date(Date.now() - 86400000 * 20).toISOString() }
+        if (window.DB.get('announcements').length === 0) {
+            window.DB.set('announcements', [
+                { id: window.DB.generateId(), title: 'Welcome to AFI Belagavi', content: 'We are excited to announce the official launch of AFI Belagavi Taluka. Join us in our mission to promote AYUSH healthcare.', category: 'General', createdAt: new Date(Date.now() - 86400000 * 20).toISOString() }
             ]);
         }
-        if (DB.get('cme').length === 0) {
-            DB.set('cme', [
-                { id: DB.generateId(), title: 'Recent Advances in Ayurveda', description: 'A comprehensive CME program covering the latest developments in Ayurvedic medicine and research.', date: new Date(Date.now() + 86400000 * 30).toISOString().split('T')[0], venue: 'Belagavi Medical Hall', createdAt: new Date().toISOString() }
+        if (window.DB.get('cme').length === 0) {
+            window.DB.set('cme', [
+                { id: window.DB.generateId(), title: 'Recent Advances in Ayurveda', description: 'A comprehensive CME program covering the latest developments in Ayurvedic medicine and research.', date: new Date(Date.now() + 86400000 * 30).toISOString().split('T')[0], venue: 'Belagavi Medical Hall', createdAt: new Date().toISOString() }
             ]);
         }
         renderHome();
