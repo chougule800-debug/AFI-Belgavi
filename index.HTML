@@ -424,54 +424,6 @@
         </nav>
     </div>
 </header>
-<script type="module">
-    // Import Firebase SDK
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, get, child, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyChBU766-JPIMUX_7jZPLpVb7QoZCBwpXg",
-        authDomain: "afi-544dd.firebaseapp.com",
-        databaseURL: "https://afi-544dd-default-rtdb.firebaseio.com",
-        projectId: "afi-544dd",
-        storageBucket: "afi-544dd.firebasestorage.app",
-        messagingSenderId: "94350085004",
-        appId: "1:94350085004:web:0d2fd8c497071eadf8e4a9",
-        measurementId: "G-LJMSV8EGWQ"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    // Expose DB functions to global scope for inline handlers
-    window.__firebaseDB = db;
-    window.__firebaseRef = ref;
-    window.__firebaseSet = set;
-    window.__firebaseGet = get;
-    window.__firebasePush = push;
-    window.__firebaseRemove = remove;
-    window.__firebaseChild = child;
-    window.__firebaseOnValue = onValue;
-
-    console.log("🔥 Firebase initialized successfully");
-    console.log("✅ Connected to database:", firebaseConfig.databaseURL);
-
-    // Test connection - write a test entry
-    try {
-        const testRef = ref(db, 'afi/connection_test');
-        set(testRef, {
-            timestamp: new Date().toISOString(),
-            status: 'connected'
-        }).then(() => {
-            console.log("✅ Firebase write test successful");
-        }).catch((error) => {
-            console.warn("⚠️ Firebase write test failed:", error);
-        });
-    } catch (error) {
-        console.warn("⚠️ Firebase connection error:", error);
-    }
-</script>
 <!-- HERO -->
 <section class="hero" id="heroSection">
     <div class="hero-content">
@@ -721,7 +673,7 @@
     </div>
 </div>
 
-<!-- REGISTRATION MODAL (fields one below each other) -->
+<!-- REGISTRATION MODAL -->
 <div class="lightbox-overlay" id="registrationModal">
     <div style="background:white;border-radius:15px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;padding:30px;position:relative;animation:slideUp 0.3s;">
         <button class="lightbox-close" style="position:sticky;top:0;float:right;color:var(--gray);font-size:30px;background:none;border:none;cursor:pointer;" onclick="closeRegistration()">&times;</button>
@@ -745,7 +697,6 @@
             </div>
         </div>
         <form id="publicRegistrationForm">
-            <!-- all fields stacked vertically -->
             <div class="form-group"><label>Full Name *</label><input type="text" id="regName" required placeholder="Dr. Name"></div>
             <div class="form-group"><label>Mobile *</label><input type="tel" id="regMobile" required placeholder="10-digit" pattern="[0-9]{10}"></div>
             <div class="form-group"><label>Qualification *</label><input type="text" id="regQualification" required placeholder="BAMS, BHMS"></div>
@@ -770,8 +721,7 @@
     <img id="lightboxImage" src="" alt="Gallery Image">
 </div>
 
-<!-- ============================================================ -->
-<!-- JAVASCRIPT – Firebase + Local Storage fallback -->
+<!-- Firebase + Logic -->
 <script type="module">
     // Import Firebase SDK
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -801,16 +751,27 @@
     window.__firebaseChild = child;
     window.__firebaseOnValue = onValue;
 
-    console.log("🔥 Firebase initialized");
+    console.log("🔥 Firebase initialized successfully");
+    console.log("✅ Connected to database:", firebaseConfig.databaseURL);
+
+    // Test connection - write a test entry
+    try {
+        const testRef = ref(db, 'afi/connection_test');
+        set(testRef, {
+            timestamp: new Date().toISOString(),
+            status: 'connected'
+        }).then(() => {
+            console.log("✅ Firebase write test successful");
+        }).catch((error) => {
+            console.warn("⚠️ Firebase write test failed:", error);
+        });
+    } catch (error) {
+        console.warn("⚠️ Firebase connection error:", error);
+    }
 </script>
 
 <script>
-    // --------------------------------------------------------------
-    // FALLBACK / LOCAL STORAGE (used if Firebase is not ready)
-    // We'll keep localStorage as primary for simplicity, but also
-    // attempt to sync with Firebase on each change.
-    // For demo, we keep localStorage as source of truth.
-    // --------------------------------------------------------------
+    // ---------- LOCAL STORAGE + FIREBASE SYNC ----------
     const DB = {
         get: function(key) {
             try { return JSON.parse(localStorage.getItem('afi_' + key)) || []; }
@@ -818,7 +779,7 @@
         },
         set: function(key, data) {
             localStorage.setItem('afi_' + key, JSON.stringify(data));
-            // Also push to Firebase if available
+            // Sync to Firebase
             try {
                 const db = window.__firebaseDB;
                 const ref = window.__firebaseRef;
@@ -833,7 +794,7 @@
         }
     };
 
-    // Try to load initial data from Firebase into localStorage
+    // Load from Firebase into localStorage on startup
     async function loadFromFirebase() {
         try {
             const db = window.__firebaseDB;
@@ -854,13 +815,9 @@
             console.log('✅ Firebase data loaded into localStorage');
         } catch(e) { console.log('Firebase load skipped', e); }
     }
-
-    // Call on load
     setTimeout(loadFromFirebase, 500);
 
-    // --------------------------------------------------------------
-    // ALL WEBSITE LOGIC (same as before, using DB)
-    // --------------------------------------------------------------
+    // ---------- WEBSITE LOGIC ----------
     let isAdmin = false;
     let currentPage = 'home';
     let selectedFile = null;
