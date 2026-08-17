@@ -104,6 +104,12 @@
             overflow: hidden;
         }
         .hero-content { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; }
+        .hero-logo {
+            width: 120px; height: 120px; border-radius: 50%; background: var(--white);
+            margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;
+            border: 4px solid var(--secondary); box-shadow: 0 8px 30px rgba(0,0,0,0.2); overflow: hidden; padding: 10px;
+        }
+        .hero-logo img { width: 100%; height: 100%; object-fit: contain; }
         .hero h2 { font-size: clamp(28px, 5vw, 48px); font-weight: 700; font-family: 'Playfair Display', serif; margin-bottom: 5px; }
         .hero .tagline { font-size: clamp(18px, 2.5vw, 28px); color: var(--secondary); font-weight: 600; margin-bottom: 15px; letter-spacing: 2px; }
         .hero-values { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 15px 0 20px; }
@@ -238,7 +244,7 @@
         .status-pending { background: #fff3e0; color: #e65100; }
         .status-inactive { background: #fbe9e7; color: var(--danger); }
 
-        /* ----- FOOTER ----- */
+        /* ----- FOOTER (centered) ----- */
         .footer {
             background: var(--primary);
             color: var(--white);
@@ -251,7 +257,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 30px;
-            text-align: center;
+            text-align: center; /* center content inside columns */
         }
         .footer h3 {
             color: var(--secondary);
@@ -379,6 +385,7 @@
             .gallery-grid { grid-template-columns: 1fr 1fr; }
             .header-logo h1 { font-size: 16px; }
             .board-card .name { font-size: 18px; }
+            .hero-logo { width: 80px; height: 80px; }
         }
         .hidden { display: none !important; }
         .text-center { text-align: center; }
@@ -578,7 +585,7 @@
     </section>
 </main>
 
-<!-- FOOTER -->
+<!-- FOOTER (centered) -->
 <footer class="footer">
     <div class="footer-container">
         <div>
@@ -620,24 +627,24 @@
             <div id="adminLoggedOut">
                 <div class="admin-form" style="max-width:400px;margin:0 auto;">
                     <h4>Admin Login</h4>
-                    <div class="form-group"><label>Email</label><input type="email" id="adminEmail" value="admin@afi.org"></div>
-                    <div class="form-group"><label>Password</label><input type="password" id="adminPassword" value="admin123"></div>
+                    <div class="form-group"><label>Email</label><input type="email" id="adminEmail" value="" placeholder="admin@afi.org"></div>
+                    <div class="form-group"><label>Password</label><input type="password" id="adminPassword" value="" placeholder="Firebase password"></div>
                     <button class="btn btn-primary" onclick="adminLogin()"><i class="fas fa-sign-in-alt"></i> Login</button>
-                    <div id="adminLoginMsg" style="margin-top:10px;font-weight:600;"></div>
+                    <div id="adminLoginMsg" style="margin-top:10px;font-weight:600;"></div><div style="margin-top:10px;font-size:12px;color:var(--gray);">Secure login is handled by Firebase Authentication.</div>
                 </div>
             </div>
             <div id="adminLoggedIn" style="display:none;">
                 <div class="flex flex-wrap align-center justify-between"><span>👤 Logged in as <strong id="adminUserDisplay">Admin</strong></span><button class="btn btn-danger" onclick="adminLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button></div>
             </div>
         </div>
-        <div class="admin-tabs" id="adminTabs">
+        <div class="admin-tabs" id="adminTabs" style="display:none;">
             <button class="admin-tab active" onclick="showAdminTab('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</button>
             <button class="admin-tab" onclick="showAdminTab('members')"><i class="fas fa-users"></i> Members</button>
             <button class="admin-tab" onclick="showAdminTab('announcements')"><i class="fas fa-bullhorn"></i> Announcements</button>
             <button class="admin-tab" onclick="showAdminTab('cme')"><i class="fas fa-graduation-cap"></i> CME</button>
             <button class="admin-tab" onclick="showAdminTab('gallery')"><i class="fas fa-images"></i> Gallery</button>
         </div>
-        <div id="adminContent">
+        <div id="adminContent" style="display:none;">
             <div id="admin-dashboard" class="admin-tab-content">
                 <div class="stats-grid" id="adminStats">
                     <div class="stat-card"><div class="number" id="admMembers">0</div><div class="label">Members</div></div>
@@ -667,7 +674,7 @@
     </div>
 </div>
 
-<!-- REGISTRATION MODAL -->
+<!-- REGISTRATION MODAL (fields one below each other) -->
 <div class="lightbox-overlay" id="registrationModal">
     <div style="background:white;border-radius:15px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;padding:30px;position:relative;animation:slideUp 0.3s;">
         <button class="lightbox-close" style="position:sticky;top:0;float:right;color:var(--gray);font-size:30px;background:none;border:none;cursor:pointer;" onclick="closeRegistration()">&times;</button>
@@ -691,6 +698,7 @@
             </div>
         </div>
         <form id="publicRegistrationForm">
+            <!-- all fields stacked vertically -->
             <div class="form-group"><label>Full Name *</label><input type="text" id="regName" required placeholder="Dr. Name"></div>
             <div class="form-group"><label>Mobile *</label><input type="tel" id="regMobile" required placeholder="10-digit" pattern="[0-9]{10}"></div>
             <div class="form-group"><label>Qualification *</label><input type="text" id="regQualification" required placeholder="BAMS, BHMS"></div>
@@ -716,11 +724,18 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- JAVASCRIPT – Firebase + Local Storage -->
+<!-- JAVASCRIPT – Firebase Realtime Database + Firebase Auth + Storage -->
 <script type="module">
-    // Import Firebase SDK
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, get, child, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import {
+        getDatabase, ref, get, set, push, update, remove, onValue
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+    import {
+        getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    import {
+        getStorage, storageRef, uploadBytes, getDownloadURL, deleteObject
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-storage.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyChBU766-JPIMUX_7jZPLpVb7QoZCBwpXg",
@@ -735,139 +750,203 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
 
-    // Expose Firebase to window for use in inline handlers
-    window.__firebaseDB = db;
-    window.__firebaseRef = ref;
-    window.__firebaseSet = set;
-    window.__firebaseGet = get;
-    window.__firebasePush = push;
-    window.__firebaseRemove = remove;
-    window.__firebaseChild = child;
-    window.__firebaseOnValue = onValue;
+    window.AFI = { app, db, auth, storage, ref, get, set, push, update, remove };
 
-    console.log("🔥 Firebase initialized successfully");
-    console.log("✅ Connected to database:", firebaseConfig.databaseURL);
-
-    // Test connection - write a test entry
-    try {
-        const testRef = ref(db, 'afi/connection_test');
-        set(testRef, {
-            timestamp: new Date().toISOString(),
-            status: 'connected'
-        }).then(() => {
-            console.log("✅ Firebase write test successful");
-        }).catch((error) => {
-            console.warn("⚠️ Firebase write test failed:", error);
-        });
-    } catch (error) {
-        console.warn("⚠️ Firebase connection error:", error);
-    }
-
-    // Load data from Firebase on startup and keep in sync
-    async function loadFromFirebase() {
-        try {
-            const collections = ['members', 'announcements', 'cme', 'gallery'];
-            for (const col of collections) {
-                const dbRef = ref(window.__firebaseDB, 'afi/' + col);
-                const snapshot = await get(dbRef);
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    if (Array.isArray(data) && data.length > 0) {
-                        localStorage.setItem('afi_' + col, JSON.stringify(data));
-                        console.log(`✅ Loaded ${data.length} ${col} from Firebase`);
-                    }
-                }
-            }
-            // Refresh UI after loading
-            renderHome();
-            renderPublicMembers();
-            renderPublicGallery();
-            renderPublicNoticesFull();
-            renderPublicCME();
-        } catch(e) { 
-            console.log('⚠️ Firebase load error, using local storage:', e.message);
-        }
-    }
-
-    // Initial load after a short delay
-    setTimeout(loadFromFirebase, 1000);
-
-    // Listen for real-time updates on all collections
-    function setupRealtimeListeners() {
-        const collections = ['members', 'announcements', 'cme', 'gallery'];
-        collections.forEach(col => {
-            const dbRef = ref(window.__firebaseDB, 'afi/' + col);
-            onValue(dbRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    if (Array.isArray(data)) {
-                        localStorage.setItem('afi_' + col, JSON.stringify(data));
-                        console.log(`🔄 Realtime update: ${col} (${data.length} items)`);
-                        // Refresh UI
-                        renderHome();
-                        renderPublicMembers();
-                        renderPublicGallery();
-                        renderPublicNoticesFull();
-                        renderPublicCME();
-                        if (document.getElementById('adminOverlay').classList.contains('active')) {
-                            renderAdminDashboard();
-                            renderAdminMembers();
-                            renderAdminAnnouncements();
-                            renderAdminCME();
-                            renderAdminGallery();
-                        }
-                    }
-                }
-            }, (error) => {
-                console.warn(`⚠️ Realtime listener error for ${col}:`, error);
-            });
-        });
-    }
-
-    // Setup realtime listeners after initial load
-    setTimeout(setupRealtimeListeners, 2000);
-
-    // Make sure DB functions are available globally
-    window.DB = {
-        get: function(key) {
-            try { return JSON.parse(localStorage.getItem('afi_' + key)) || []; }
-            catch { return []; }
-        },
-        set: function(key, data) {
-            localStorage.setItem('afi_' + key, JSON.stringify(data));
-            // Sync to Firebase
-            try {
-                const db = window.__firebaseDB;
-                const refFn = window.__firebaseRef;
-                const setFn = window.__firebaseSet;
-                if (db && refFn && setFn) {
-                    setFn(refFn(db, 'afi/' + key), data)
-                        .then(() => console.log(`✅ Synced ${key} to Firebase`))
-                        .catch((e) => console.warn(`⚠️ Failed to sync ${key} to Firebase:`, e));
-                }
-            } catch(e) {
-                console.warn('⚠️ Firebase sync error:', e);
-            }
-        },
-        generateId: function() {
-            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-        }
-    };
-
-    console.log('✅ Firebase + Local Storage sync ready');
-</script>
-
-<script>
-    // --------------------------------------------------------------
-    // WEBSITE LOGIC (using window.DB)
-    // --------------------------------------------------------------
     let isAdmin = false;
     let currentPage = 'home';
     let selectedFile = null;
+    window._galleryFile = null;
 
-    function toggleMobileMenu() {
-        document.getElementById('mainNav').classList.toggle('open');
+    const collections = ['members', 'announcements', 'cme', 'gallery'];
+
+    function dbRef(collection) {
+        return ref(db, 'afi/' + collection);
+    }
+
+    async function readCollection(collection) {
+        const snap = await get(dbRef(collection));
+        if (!snap.exists()) return [];
+        const value = snap.val();
+
+        // Supports both Firebase object collections and older array data.
+        if (Array.isArray(value)) return value.filter(Boolean);
+        return Object.entries(value || {}).map(([id, item]) => ({
+            id,
+            ...(item || {})
+        }));
+    }
+
+    async function saveRecord(collection, data, id = null) {
+        const recordId = id || push(dbRef(collection)).key;
+        await set(ref(db, `afi/${collection}/${recordId}`), {
+            ...data,
+            id: recordId
+        });
+        return recordId;
+    }
+
+    async function deleteRecord(collection, id) {
+        await remove(ref(db, `afi/${collection}/${id}`));
+    }
+
+    async function loadCounts() {
+        const [members, announcements, cme, gallery] = await Promise.all(
+            collections.map(readCollection)
+        );
+        return { members, announcements, cme, gallery };
+    }
+
+    async function renderHome() {
+        try {
+            const { members, announcements, cme, gallery } = await loadCounts();
+
+            document.getElementById('pubMembers').textContent = members.length;
+            document.getElementById('pubNotices').textContent = announcements.length;
+            document.getElementById('pubCME').textContent = cme.length;
+            document.getElementById('pubCamps').textContent = gallery.length;
+
+            const container = document.getElementById('publicNotices');
+            const sorted = [...announcements]
+                .sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+                .slice(0,3);
+
+            container.innerHTML = sorted.length
+                ? sorted.map(n => `
+                    <div class="notice-item">
+                        <div>
+                            <span class="tag tag-${(n.category || 'general').toLowerCase()}">${escapeHtml(n.category || 'General')}</span>
+                            <strong style="display:block;margin-top:5px;">${escapeHtml(n.title)}</strong>
+                            <p style="color:var(--gray);font-size:14px;">${escapeHtml(n.content)}</p>
+                        </div>
+                        <span class="date">${formatDate(n.createdAt)}</span>
+                    </div>`).join('')
+                : '<p style="text-align:center;color:var(--gray);padding:20px;">No announcements yet.</p>';
+        } catch (e) {
+            console.error(e);
+            toast('Unable to load Firebase data.', 'error');
+        }
+    }
+
+    async function renderPublicMembers() {
+        const container = document.getElementById('publicMembersTable');
+        container.innerHTML = '<div class="text-center" style="padding:30px;"><div class="spinner"></div><p style="margin-top:10px;color:var(--gray);">Loading members...</p></div>';
+
+        try {
+            const members = await readCollection('members');
+
+            if (!members.length) {
+                container.innerHTML = '<p class="text-center" style="padding:30px;color:var(--gray);">No members registered yet.</p>';
+                return;
+            }
+
+            members.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+            let html = `<table><thead><tr>
+                <th>Photo</th><th>Name</th><th>Reg No</th><th>Mobile</th><th>Qualification</th><th>Status</th>
+            </tr></thead><tbody>`;
+
+            members.forEach(m => {
+                const photo = m.photoURL
+                    ? `<img src="${escapeAttr(m.photoURL)}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #e0e6ed;">`
+                    : `<div style="width:40px;height:40px;border-radius:50%;background:#eef4ff;display:flex;align-items:center;justify-content:center;color:var(--primary-light);"><i class="fas fa-user"></i></div>`;
+
+                html += `<tr>
+                    <td>${photo}</td>
+                    <td><strong>${escapeHtml(m.name)}</strong></td>
+                    <td>${escapeHtml(m.regno)}</td>
+                    <td>${escapeHtml(m.mobile)}</td>
+                    <td><span style="background:#eef4ff;padding:4px 12px;border-radius:20px;font-size:12px;">${escapeHtml(m.qualification)}</span></td>
+                    <td><span class="status-badge status-${escapeAttr(m.status || 'pending')}">${escapeHtml(m.status || 'Pending')}</span></td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<p class="text-center" style="padding:30px;color:var(--danger);">Could not load members.</p>';
+        }
+    }
+
+    async function filterMembers() {
+        const query = document.getElementById('memberSearch').value.toLowerCase().trim();
+        document.querySelectorAll('#publicMembersTable table tbody tr').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
+        });
+    }
+
+    async function renderPublicGallery() {
+        const container = document.getElementById('publicGallery');
+        container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;"><div class="spinner"></div></div>';
+
+        try {
+            const gallery = await readCollection('gallery');
+            gallery.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+            if (!gallery.length) {
+                container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--gray);">No images in gallery.</div>';
+                return;
+            }
+
+            container.innerHTML = gallery.map(g => `
+                <div class="gallery-item">
+                    <img src="${escapeAttr(g.imageURL)}" alt="${escapeAttr(g.title || 'AFI Gallery')}" loading="lazy">
+                    <div class="overlay">${escapeHtml(g.title || 'AFI Gallery')}</div>
+                    <button class="lightbox-btn" onclick="openLightbox('${escapeAttr(g.imageURL)}')"><i class="fas fa-search-plus"></i></button>
+                </div>
+            `).join('');
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--danger);">Could not load gallery.</div>';
+        }
+    }
+
+    async function renderPublicNoticesFull() {
+        const container = document.getElementById('publicNoticesFull');
+        try {
+            const notices = await readCollection('announcements');
+            notices.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+            container.innerHTML = notices.length
+                ? notices.map(n => `
+                    <div class="notice-item">
+                        <div>
+                            <span class="tag tag-${(n.category || 'general').toLowerCase()}">${escapeHtml(n.category || 'General')}</span>
+                            <strong style="display:block;margin-top:5px;font-size:16px;">${escapeHtml(n.title)}</strong>
+                            <p style="color:var(--gray);margin-top:5px;">${escapeHtml(n.content)}</p>
+                        </div>
+                        <span class="date">${formatDate(n.createdAt)}</span>
+                    </div>`).join('')
+                : '<p style="text-align:center;padding:30px;color:var(--gray);">No announcements yet.</p>';
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<p style="text-align:center;padding:30px;color:var(--danger);">Could not load announcements.</p>';
+        }
+    }
+
+    async function renderPublicCME() {
+        const container = document.getElementById('publicCME');
+        try {
+            const cme = await readCollection('cme');
+            cme.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+            container.innerHTML = cme.length ? cme.map(c => {
+                const isPast = new Date(c.date) < new Date();
+                return `
+                    <div class="card" style="border-top-color:${isPast ? 'var(--gray)' : 'var(--success)'};">
+                        <span class="status-badge ${isPast ? 'status-inactive' : 'status-active'}">${isPast ? 'Past' : 'Upcoming'}</span>
+                        <h3 style="margin-top:10px;">${escapeHtml(c.title)}</h3>
+                        <p style="color:var(--gray);">${escapeHtml(c.description)}</p>
+                        <small style="color:var(--gray);"><i class="fas fa-calendar-alt"></i> ${formatDate(c.date)} ${c.venue ? '| 📍 ' + escapeHtml(c.venue) : ''}</small>
+                    </div>`;
+            }).join('') : '<p style="text-align:center;padding:30px;color:var(--gray);">No CME programs scheduled.</p>';
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<p style="text-align:center;padding:30px;color:var(--danger);">Could not load CME data.</p>';
+        }
     }
 
     function navigateTo(page) {
@@ -875,92 +954,22 @@
         document.querySelectorAll('.page-content').forEach(el => el.style.display = 'none');
         const target = document.getElementById('page-' + page);
         if (target) target.style.display = 'block';
+
         document.querySelectorAll('.header-nav a[data-page]').forEach(link => {
             link.classList.toggle('active', link.dataset.page === page);
         });
+
         document.getElementById('mainNav').classList.remove('open');
-        switch(page) {
-            case 'home': renderHome(); break;
-            case 'members': renderPublicMembers(); break;
-            case 'gallery': renderPublicGallery(); break;
-            case 'notices': renderPublicNoticesFull(); break;
-            case 'cme': renderPublicCME(); break;
-        }
+
+        if (page === 'home') renderHome();
+        if (page === 'members') renderPublicMembers();
+        if (page === 'gallery') renderPublicGallery();
+        if (page === 'notices') renderPublicNoticesFull();
+        if (page === 'cme') renderPublicCME();
     }
 
-    function renderHome() {
-        const members = window.DB.get('members');
-        const notices = window.DB.get('announcements');
-        const cme = window.DB.get('cme');
-        const gallery = window.DB.get('gallery');
-        document.getElementById('pubMembers').textContent = members.length;
-        document.getElementById('pubNotices').textContent = notices.length;
-        document.getElementById('pubCME').textContent = cme.length;
-        document.getElementById('pubCamps').textContent = gallery.length;
-        const container = document.getElementById('publicNotices');
-        const sorted = [...notices].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3);
-        if (sorted.length === 0) {
-            container.innerHTML = '<p style="text-align:center;color:var(--gray);padding:20px;">No announcements yet.</p>';
-        } else {
-            container.innerHTML = sorted.map(n => `
-                <div class="notice-item">
-                    <div>
-                        <span class="tag tag-${(n.category || 'general').toLowerCase()}">${escapeHtml(n.category || 'General')}</span>
-                        <strong style="display:block;margin-top:5px;">${escapeHtml(n.title)}</strong>
-                        <p style="color:var(--gray);font-size:14px;">${escapeHtml(n.content)}</p>
-                    </div>
-                    <span class="date">${formatDate(n.createdAt)}</span>
-                </div>
-            `).join('');
-        }
-    }
-
-    function renderPublicMembers() {
-        const container = document.getElementById('publicMembersTable');
-        const members = window.DB.get('members');
-        if (members.length === 0) {
-            container.innerHTML = '<p class="text-center" style="padding:30px;color:var(--gray);">No members registered yet.</p>';
-            return;
-        }
-        let html = `<table><thead><tr><th>Photo</th><th>Name</th><th>Reg No</th><th>Mobile</th><th>Qualification</th><th>Status</th></tr></thead><tbody>`;
-        members.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-        members.forEach(m => {
-            const photo = m.photoBase64 ? `<img src="${m.photoBase64}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #e0e6ed;">` 
-                : `<div style="width:40px;height:40px;border-radius:50%;background:#eef4ff;display:flex;align-items:center;justify-content:center;color:var(--primary-light);"><i class="fas fa-user"></i></div>`;
-            html += `<tr><td>${photo}</td><td><strong>${escapeHtml(m.name)}</strong></td><td>${escapeHtml(m.regno)}</td><td>${escapeHtml(m.mobile)}</td><td><span style="background:#eef4ff;padding:4px 12px;border-radius:20px;font-size:12px;">${escapeHtml(m.qualification)}</span></td><td><span class="status-badge status-${m.status || 'pending'}">${m.status || 'Pending'}</span></td></tr>`;
-        });
-        html += '</tbody></table>';
-        container.innerHTML = html;
-    }
-
-    function filterMembers() {
-        const query = document.getElementById('memberSearch').value.toLowerCase();
-        const rows = document.querySelectorAll('#publicMembersTable table tbody tr');
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(query) ? '' : 'none';
-        });
-    }
-
-    function renderPublicGallery() {
-        const container = document.getElementById('publicGallery');
-        const gallery = window.DB.get('gallery');
-        if (gallery.length === 0) {
-            container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--gray);">No images in gallery.</div>';
-            return;
-        }
-        gallery.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-        container.innerHTML = '';
-        gallery.forEach(g => {
-            const div = document.createElement('div');
-            div.className = 'gallery-item';
-            div.innerHTML = `
-                <img src="${g.imageBase64}" alt="${escapeHtml(g.title)}" loading="lazy">
-                <div class="overlay">${escapeHtml(g.title)}</div>
-                <button class="lightbox-btn" onclick="openLightbox('${g.imageBase64}')"><i class="fas fa-search-plus"></i></button>
-            `;
-            container.appendChild(div);
-        });
+    function toggleMobileMenu() {
+        document.getElementById('mainNav').classList.toggle('open');
     }
 
     function openLightbox(src) {
@@ -971,129 +980,6 @@
     function closeLightbox() {
         document.getElementById('lightboxOverlay').classList.remove('active');
     }
-
-    function renderPublicNoticesFull() {
-        const container = document.getElementById('publicNoticesFull');
-        const notices = window.DB.get('announcements');
-        if (notices.length === 0) {
-            container.innerHTML = '<p style="text-align:center;padding:30px;color:var(--gray);">No announcements yet.</p>';
-            return;
-        }
-        notices.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-        container.innerHTML = notices.map(n => `
-            <div class="notice-item">
-                <div>
-                    <span class="tag tag-${(n.category || 'general').toLowerCase()}">${escapeHtml(n.category || 'General')}</span>
-                    <strong style="display:block;margin-top:5px;font-size:16px;">${escapeHtml(n.title)}</strong>
-                    <p style="color:var(--gray);margin-top:5px;">${escapeHtml(n.content)}</p>
-                </div>
-                <span class="date">${formatDate(n.createdAt)}</span>
-            </div>
-        `).join('');
-    }
-
-    function renderPublicCME() {
-        const container = document.getElementById('publicCME');
-        const cme = window.DB.get('cme');
-        if (cme.length === 0) {
-            container.innerHTML = '<p style="text-align:center;padding:30px;color:var(--gray);">No CME programs scheduled.</p>';
-            return;
-        }
-        cme.sort((a,b) => new Date(b.date) - new Date(a.date));
-        container.innerHTML = cme.map(c => {
-            const isPast = new Date(c.date) < new Date();
-            return `
-                <div class="card" style="border-top-color:${isPast ? 'var(--gray)' : 'var(--success)'};">
-                    <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:10px;">
-                        <div>
-                            <span class="status-badge ${isPast ? 'status-inactive' : 'status-active'}">${isPast ? 'Past' : 'Upcoming'}</span>
-                            <h3 style="margin-top:10px;">${escapeHtml(c.title)}</h3>
-                            <p style="color:var(--gray);">${escapeHtml(c.description)}</p>
-                            <small style="color:var(--gray);"><i class="fas fa-calendar-alt"></i> ${formatDate(c.date)} ${c.venue ? '| 📍 ' + escapeHtml(c.venue) : ''}</small>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    document.getElementById('regPhotoInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        selectedFile = file;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            document.getElementById('regPhotoPreview').innerHTML = `<img src="${ev.target.result}" alt="Preview">`;
-        };
-        reader.readAsDataURL(file);
-    });
-
-    document.getElementById('publicRegistrationForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const resp = document.getElementById('regResponse');
-        const btn = this.querySelector('button[type="submit"]');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Registering...';
-        resp.textContent = '';
-        try {
-            const name = document.getElementById('regName').value.trim();
-            const mobile = document.getElementById('regMobile').value.trim();
-            const qualification = document.getElementById('regQualification').value.trim();
-            const regno = document.getElementById('regRegNo').value.trim();
-            const address = document.getElementById('regAddress').value.trim();
-            const transaction = document.getElementById('regTransaction').value.trim();
-            const file = selectedFile;
-            let photoBase64 = '';
-            if (file) {
-                photoBase64 = await compressImage(file, 300, 0.7);
-            }
-            const members = window.DB.get('members');
-            if (members.find(m => m.mobile === mobile)) {
-                resp.textContent = '✗ Mobile number already registered!';
-                resp.style.color = 'var(--danger)';
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save"></i> Register';
-                return;
-            }
-            if (members.find(m => m.regno === regno)) {
-                resp.textContent = '✗ Registration number already exists!';
-                resp.style.color = 'var(--danger)';
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save"></i> Register';
-                return;
-            }
-            members.push({
-                id: window.DB.generateId(),
-                name,
-                mobile,
-                qualification,
-                regno,
-                address,
-                transaction,
-                photoBase64,
-                status: 'pending',
-                createdAt: new Date().toISOString()
-            });
-            window.DB.set('members', members);
-            resp.textContent = '✓ Registration successful! Welcome to AFI.';
-            resp.style.color = 'var(--success)';
-            this.reset();
-            document.getElementById('regPhotoPreview').innerHTML = '';
-            selectedFile = null;
-            toast('Registration successful!', 'success');
-            setTimeout(() => {
-                closeRegistration();
-                renderHome();
-                renderPublicMembers();
-            }, 1500);
-        } catch (e) {
-            resp.textContent = '✗ ' + e.message;
-            resp.style.color = 'var(--danger)';
-            toast('Error: ' + e.message, 'error');
-        }
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> Register';
-    });
 
     function openRegistration() {
         document.getElementById('registrationModal').classList.add('active');
@@ -1107,90 +993,227 @@
         document.getElementById('registrationModal').classList.remove('active');
     }
 
-    // ADMIN PANEL
+    async function uploadImage(file, folder) {
+        if (!file) return '';
+        if (!file.type.startsWith('image/')) throw new Error('Please select an image file.');
+        if (file.size > 8 * 1024 * 1024) throw new Error('Image must be smaller than 8 MB.');
+
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `${folder}/${Date.now()}_${safeName}`;
+        const sRef = storageRef(storage, path);
+        await uploadBytes(sRef, file, { contentType: file.type });
+        return await getDownloadURL(sRef);
+    }
+
+    async function deleteStorageFile(url) {
+        if (!url || !url.includes('firebasestorage.googleapis.com')) return;
+        try {
+            await deleteObject(storageRef(storage, url));
+        } catch (e) {
+            console.warn('Storage delete skipped:', e);
+        }
+    }
+
+    document.getElementById('regPhotoInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            document.getElementById('regPhotoPreview').innerHTML = `<img src="${ev.target.result}" alt="Preview">`;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('publicRegistrationForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const resp = document.getElementById('regResponse');
+        const btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Registering...';
+        resp.textContent = '';
+
+        try {
+            const name = document.getElementById('regName').value.trim();
+            const mobile = document.getElementById('regMobile').value.trim();
+            const qualification = document.getElementById('regQualification').value.trim();
+            const regno = document.getElementById('regRegNo').value.trim();
+            const address = document.getElementById('regAddress').value.trim();
+            const transaction = document.getElementById('regTransaction').value.trim();
+
+            const members = await readCollection('members');
+
+            if (members.some(m => m.mobile === mobile)) throw new Error('Mobile number already registered!');
+            if (members.some(m => m.regno === regno)) throw new Error('Registration number already exists!');
+
+            let photoURL = '';
+            if (selectedFile) photoURL = await uploadImage(selectedFile, 'members');
+
+            await saveRecord('members', {
+                name, mobile, qualification, regno, address, transaction,
+                photoURL,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            });
+
+            resp.textContent = '✓ Registration successful! Welcome to AFI.';
+            resp.style.color = 'var(--success)';
+            this.reset();
+            document.getElementById('regPhotoPreview').innerHTML = '';
+            selectedFile = null;
+            toast('Registration saved to Firebase!', 'success');
+
+            setTimeout(() => {
+                closeRegistration();
+                renderHome();
+                renderPublicMembers();
+            }, 1200);
+        } catch (e) {
+            console.error(e);
+            resp.textContent = '✗ ' + e.message;
+            resp.style.color = 'var(--danger)';
+            toast('Registration failed: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Register';
+        }
+    });
+
+    // ---------------- ADMIN AUTH ----------------
+
     function openAdmin() {
         document.getElementById('adminOverlay').classList.add('active');
         renderAdminDashboard();
-        renderAdminMembers();
-        renderAdminAnnouncements();
-        renderAdminCME();
-        renderAdminGallery();
+        if (isAdmin) {
+            renderAdminMembers();
+            renderAdminAnnouncements();
+            renderAdminCME();
+            renderAdminGallery();
+        }
     }
 
     function closeAdmin() {
         document.getElementById('adminOverlay').classList.remove('active');
     }
 
-    function adminLogin() {
+    async function adminLogin() {
         const email = document.getElementById('adminEmail').value.trim();
-        const password = document.getElementById('adminPassword').value.trim();
+        const password = document.getElementById('adminPassword').value;
         const msg = document.getElementById('adminLoginMsg');
-        if (email === 'admin@afi.org' && password === 'admin123') {
-            isAdmin = true;
-            document.getElementById('adminLoggedOut').style.display = 'none';
-            document.getElementById('adminLoggedIn').style.display = 'block';
-            document.getElementById('adminUserDisplay').textContent = 'Admin';
-            msg.textContent = '✓ Login successful!';
-            msg.style.color = 'var(--success)';
+
+        msg.textContent = 'Signing in...';
+        msg.style.color = 'var(--primary-light)';
+
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            toast('Firebase Admin login successful', 'success');
+        } catch (e) {
+            console.error(e);
+            msg.textContent = '✗ ' + (e.code === 'auth/invalid-credential'
+                ? 'Invalid email or password.'
+                : e.message);
+            msg.style.color = 'var(--danger)';
+        }
+    }
+
+    async function adminLogout() {
+        try {
+            await signOut(auth);
+            toast('Logged out', 'info');
+        } catch (e) {
+            toast(e.message, 'error');
+        }
+    }
+
+    onAuthStateChanged(auth, user => {
+        isAdmin = !!user;
+
+        document.getElementById('adminLoggedOut').style.display = user ? 'none' : 'block';
+        document.getElementById('adminLoggedIn').style.display = user ? 'block' : 'none';
+
+        if (user) {
+            document.getElementById('adminUserDisplay').textContent = user.email || 'Admin';
+            document.getElementById('adminContent').style.display = 'block';
+            document.getElementById('adminTabs').style.display = 'flex';
             renderAdminDashboard();
             renderAdminMembers();
             renderAdminAnnouncements();
             renderAdminCME();
             renderAdminGallery();
-            toast('Logged in as Admin', 'success');
         } else {
-            msg.textContent = '✗ Invalid credentials. Use admin@afi.org / admin123';
-            msg.style.color = 'var(--danger)';
+            document.getElementById('adminContent').style.display = 'none';
+            document.getElementById('adminTabs').style.display = 'none';
         }
-    }
+    });
 
-    function adminLogout() {
-        isAdmin = false;
-        document.getElementById('adminLoggedOut').style.display = 'block';
-        document.getElementById('adminLoggedIn').style.display = 'none';
-        toast('Logged out', 'info');
+    function requireAdmin() {
+        if (!isAdmin) {
+            toast('Please login as Admin first.', 'error');
+            return false;
+        }
+        return true;
     }
 
     function showAdminTab(tab) {
+        if (!requireAdmin()) return;
         document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-        document.querySelector(`.admin-tab[onclick*="${tab}"]`).classList.add('active');
+        const button = document.querySelector(`.admin-tab[onclick*="${tab}"]`);
+        if (button) button.classList.add('active');
         document.querySelectorAll('.admin-tab-content').forEach(c => c.style.display = 'none');
         const target = document.getElementById('admin-' + tab);
         if (target) target.style.display = 'block';
     }
 
-    function renderAdminDashboard() {
-        document.getElementById('admMembers').textContent = window.DB.get('members').length;
-        document.getElementById('admAnnouncements').textContent = window.DB.get('announcements').length;
-        document.getElementById('admCME').textContent = window.DB.get('cme').length;
-        document.getElementById('admGallery').textContent = window.DB.get('gallery').length;
+    async function renderAdminDashboard() {
+        if (!isAdmin) return;
+        try {
+            const { members, announcements, cme, gallery } = await loadCounts();
+            document.getElementById('admMembers').textContent = members.length;
+            document.getElementById('admAnnouncements').textContent = announcements.length;
+            document.getElementById('admCME').textContent = cme.length;
+            document.getElementById('admGallery').textContent = gallery.length;
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     function openAdminMemberForm(data = null) {
+        if (!requireAdmin()) return;
         const container = document.getElementById('adminMembersTable');
-        const existing = document.querySelector('.admin-member-form');
-        if (existing) existing.remove();
+        document.querySelector('.admin-member-form')?.remove();
+
         const form = document.createElement('div');
         form.className = 'admin-member-form admin-form';
         form.innerHTML = `
             <h4>${data ? 'Edit Member' : 'Add New Member'}</h4>
-            <input type="hidden" id="admMemberId" value="${data ? data.id : ''}">
-            <div class="form-group"><label>Name *</label><input type="text" id="admMName" value="${data ? escapeHtml(data.name) : ''}" required></div>
-            <div class="form-group"><label>Mobile *</label><input type="tel" id="admMMobile" value="${data ? escapeHtml(data.mobile) : ''}" required pattern="[0-9]{10}"></div>
-            <div class="form-group"><label>Qualification *</label><input type="text" id="admMQualification" value="${data ? escapeHtml(data.qualification) : ''}" required></div>
-            <div class="form-group"><label>Reg No *</label><input type="text" id="admMRegNo" value="${data ? escapeHtml(data.regno) : ''}" required></div>
-            <div class="form-group"><label>Address</label><textarea id="admMAddress" rows="2">${data ? escapeHtml(data.address) : ''}</textarea></div>
-            <div class="form-group"><label>Transaction No</label><input type="text" id="admMTransaction" value="${data ? escapeHtml(data.transaction) : ''}"></div>
-            <div class="form-group"><label>Status</label><select id="admMStatus"><option value="active" ${data && data.status === 'active' ? 'selected' : ''}>Active</option><option value="pending" ${data && data.status === 'pending' ? 'selected' : ''}>Pending</option><option value="inactive" ${data && data.status === 'inactive' ? 'selected' : ''}>Inactive</option></select></div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-success" onclick="saveAdminMember()"><i class="fas fa-save"></i> Save</button><button class="btn btn-danger" onclick="this.closest('.admin-member-form').remove()"><i class="fas fa-times"></i> Cancel</button></div>
+            <input type="hidden" id="admMemberId" value="${escapeAttr(data?.id || '')}">
+            <div class="form-group"><label>Name *</label><input type="text" id="admMName" value="${escapeAttr(data?.name || '')}" required></div>
+            <div class="form-group"><label>Mobile *</label><input type="tel" id="admMMobile" value="${escapeAttr(data?.mobile || '')}" required pattern="[0-9]{10}"></div>
+            <div class="form-group"><label>Qualification *</label><input type="text" id="admMQualification" value="${escapeAttr(data?.qualification || '')}" required></div>
+            <div class="form-group"><label>Reg No *</label><input type="text" id="admMRegNo" value="${escapeAttr(data?.regno || '')}" required></div>
+            <div class="form-group"><label>Address</label><textarea id="admMAddress" rows="2">${escapeHtml(data?.address || '')}</textarea></div>
+            <div class="form-group"><label>Transaction No</label><input type="text" id="admMTransaction" value="${escapeAttr(data?.transaction || '')}"></div>
+            <div class="form-group"><label>Status</label>
+                <select id="admMStatus">
+                    <option value="active" ${data?.status === 'active' ? 'selected' : ''}>Active</option>
+                    <option value="pending" ${data?.status === 'pending' || !data ? 'selected' : ''}>Pending</option>
+                    <option value="inactive" ${data?.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn btn-success" onclick="saveAdminMember()"><i class="fas fa-save"></i> Save</button>
+                <button class="btn btn-danger" onclick="this.closest('.admin-member-form').remove()"><i class="fas fa-times"></i> Cancel</button>
+            </div>
             <div id="admMemberResponse" class="mt-10" style="font-weight:600;"></div>
         `;
         container.prepend(form);
     }
 
-    function saveAdminMember() {
+    async function saveAdminMember() {
+        if (!requireAdmin()) return;
+
         const resp = document.getElementById('admMemberResponse');
-        resp.textContent = '';
         const id = document.getElementById('admMemberId').value;
         const name = document.getElementById('admMName').value.trim();
         const mobile = document.getElementById('admMMobile').value.trim();
@@ -1199,130 +1222,162 @@
         const address = document.getElementById('admMAddress').value.trim();
         const transaction = document.getElementById('admMTransaction').value.trim();
         const status = document.getElementById('admMStatus').value;
+
         if (!name || !mobile || !qualification || !regno) {
             resp.textContent = '✗ Please fill in all required fields.';
             resp.style.color = 'var(--danger)';
             return;
         }
-        let members = window.DB.get('members');
-        if (id) {
-            const index = members.findIndex(m => m.id === id);
-            if (index !== -1) members[index] = { ...members[index], name, mobile, qualification, regno, address, transaction, status, updatedAt: new Date().toISOString() };
-            window.DB.set('members', members);
-            toast('Member updated!', 'success');
-        } else {
-            members.push({ id: window.DB.generateId(), name, mobile, qualification, regno, address, transaction, status, createdAt: new Date().toISOString() });
-            window.DB.set('members', members);
-            toast('Member added!', 'success');
+
+        try {
+            const members = await readCollection('members');
+            const duplicate = members.find(m => (m.mobile === mobile || m.regno === regno) && m.id !== id);
+            if (duplicate) throw new Error('Mobile or registration number already exists.');
+
+            const existing = members.find(m => m.id === id);
+            const record = {
+                name, mobile, qualification, regno, address, transaction, status,
+                photoURL: existing?.photoURL || '',
+                createdAt: existing?.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            await saveRecord('members', record, id || null);
+            document.querySelector('.admin-member-form')?.remove();
+            toast(id ? 'Member updated in Firebase!' : 'Member added to Firebase!', 'success');
+            await refreshAll();
+        } catch (e) {
+            console.error(e);
+            resp.textContent = '✗ ' + e.message;
+            resp.style.color = 'var(--danger)';
         }
-        document.querySelector('.admin-member-form')?.remove();
-        renderAdminMembers();
-        renderPublicMembers();
-        renderAdminDashboard();
-        renderHome();
     }
 
-    function deleteAdminMember(id) {
-        if (!confirm('Delete this member permanently?')) return;
-        let members = window.DB.get('members');
-        members = members.filter(m => m.id !== id);
-        window.DB.set('members', members);
-        toast('Member deleted.', 'success');
-        renderAdminMembers();
-        renderPublicMembers();
-        renderAdminDashboard();
-        renderHome();
+    async function deleteAdminMember(id) {
+        if (!requireAdmin() || !confirm('Delete this member permanently?')) return;
+
+        try {
+            const members = await readCollection('members');
+            const member = members.find(m => m.id === id);
+            await deleteRecord('members', id);
+            if (member?.photoURL) await deleteStorageFile(member.photoURL);
+            toast('Member deleted from Firebase.', 'success');
+            await refreshAll();
+        } catch (e) {
+            toast(e.message, 'error');
+        }
     }
 
-    function renderAdminMembers() {
+    async function renderAdminMembers() {
+        if (!isAdmin) return;
         const container = document.getElementById('adminMembersTable');
-        const form = document.querySelector('.admin-member-form');
-        if (form) form.remove();
-        const members = window.DB.get('members');
-        if (members.length === 0) {
-            container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--gray);">No members registered.</p>';
-            return;
+        try {
+            const members = await readCollection('members');
+            members.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+            if (!members.length) {
+                container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--gray);">No members registered.</p>';
+                return;
+            }
+
+            container.innerHTML = `<table><thead><tr>
+                <th>Photo</th><th>Name</th><th>Reg No</th><th>Mobile</th><th>Status</th><th>Actions</th>
+            </tr></thead><tbody>${members.map(m => `
+                <tr>
+                    <td>${m.photoURL ? `<img src="${escapeAttr(m.photoURL)}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user-circle" style="font-size:35px;color:#b8c4d4;"></i>'}</td>
+                    <td><strong>${escapeHtml(m.name)}</strong></td>
+                    <td>${escapeHtml(m.regno)}</td>
+                    <td>${escapeHtml(m.mobile)}</td>
+                    <td><span class="status-badge status-${escapeAttr(m.status || 'pending')}">${escapeHtml(m.status || 'Pending')}</span></td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="openAdminMemberFormById('${escapeAttr(m.id)}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteAdminMember('${escapeAttr(m.id)}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`).join('')}</tbody></table>`;
+        } catch (e) {
+            container.innerHTML = `<p style="color:var(--danger);padding:20px;">${escapeHtml(e.message)}</p>`;
         }
-        let html = `<table><thead><tr><th>Photo</th><th>Name</th><th>Reg No</th><th>Mobile</th><th>Status</th><th>Actions</th></tr></thead><tbody>`;
-        members.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-        members.forEach(m => {
-            const photo = m.photoBase64 ? `<img src="${m.photoBase64}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #e0e6ed;">` 
-                : `<div style="width:40px;height:40px;border-radius:50%;background:#eef4ff;display:flex;align-items:center;justify-content:center;color:var(--primary-light);"><i class="fas fa-user"></i></div>`;
-            html += `<tr><td>${photo}</td><td><strong>${escapeHtml(m.name)}</strong></td><td>${escapeHtml(m.regno)}</td><td>${escapeHtml(m.mobile)}</td><td><span class="status-badge status-${m.status || 'pending'}">${m.status || 'Pending'}</span></td><td><button class="btn btn-primary btn-sm" onclick="openAdminMemberForm(${JSON.stringify(m).replace(/"/g,'&quot;')})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" onclick="deleteAdminMember('${m.id}')"><i class="fas fa-trash"></i></button></td></tr>`;
-        });
-        html += '</tbody></table>';
-        container.innerHTML = html;
+    }
+
+    async function openAdminMemberFormById(id) {
+        const members = await readCollection('members');
+        const data = members.find(m => m.id === id);
+        if (data) openAdminMemberForm(data);
     }
 
     function openAdminAnnounceForm(data = null) {
+        if (!requireAdmin()) return;
         const container = document.getElementById('adminAnnouncementsList');
-        const existing = document.querySelector('.admin-announce-form');
-        if (existing) existing.remove();
+        document.querySelector('.admin-announce-form')?.remove();
+
         const form = document.createElement('div');
         form.className = 'admin-announce-form admin-form';
         form.innerHTML = `
             <h4>${data ? 'Edit Announcement' : 'New Announcement'}</h4>
-            <input type="hidden" id="admAnnounceId" value="${data ? data.id : ''}">
-            <div class="form-group"><label>Title *</label><input type="text" id="admATitle" value="${data ? escapeHtml(data.title) : ''}" required></div>
-            <div class="form-group"><label>Content *</label><textarea id="admAContent" rows="3" required>${data ? escapeHtml(data.content) : ''}</textarea></div>
-            <div class="form-group"><label>Category</label><select id="admACategory"><option value="General" ${data && data.category === 'General' ? 'selected' : ''}>General</option><option value="Meeting" ${data && data.category === 'Meeting' ? 'selected' : ''}>Meeting</option><option value="Event" ${data && data.category === 'Event' ? 'selected' : ''}>Event</option><option value="Urgent" ${data && data.category === 'Urgent' ? 'selected' : ''}>Urgent</option></select></div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-success" onclick="saveAdminAnnounce()"><i class="fas fa-save"></i> Save</button><button class="btn btn-danger" onclick="this.closest('.admin-announce-form').remove()"><i class="fas fa-times"></i> Cancel</button></div>
-            <div id="admAnnounceResponse" class="mt-10" style="font-weight:600;"></div>
-        `;
+            <input type="hidden" id="admAnnounceId" value="${escapeAttr(data?.id || '')}">
+            <div class="form-group"><label>Title *</label><input type="text" id="admATitle" value="${escapeAttr(data?.title || '')}" required></div>
+            <div class="form-group"><label>Content *</label><textarea id="admAContent" rows="3" required>${escapeHtml(data?.content || '')}</textarea></div>
+            <div class="form-group"><label>Category</label><select id="admACategory">
+                <option value="General" ${data?.category === 'General' || !data ? 'selected' : ''}>General</option>
+                <option value="Meeting" ${data?.category === 'Meeting' ? 'selected' : ''}>Meeting</option>
+                <option value="Event" ${data?.category === 'Event' ? 'selected' : ''}>Event</option>
+                <option value="Urgent" ${data?.category === 'Urgent' ? 'selected' : ''}>Urgent</option>
+            </select></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn btn-success" onclick="saveAdminAnnounce()"><i class="fas fa-save"></i> Save</button>
+                <button class="btn btn-danger" onclick="this.closest('.admin-announce-form').remove()">Cancel</button>
+            </div>
+            <div id="admAnnounceResponse" class="mt-10"></div>`;
         container.prepend(form);
     }
 
-    function saveAdminAnnounce() {
+    async function saveAdminAnnounce() {
+        if (!requireAdmin()) return;
         const resp = document.getElementById('admAnnounceResponse');
-        resp.textContent = '';
         const id = document.getElementById('admAnnounceId').value;
         const title = document.getElementById('admATitle').value.trim();
         const content = document.getElementById('admAContent').value.trim();
         const category = document.getElementById('admACategory').value;
+
         if (!title || !content) {
             resp.textContent = '✗ Please fill in all fields.';
             resp.style.color = 'var(--danger)';
             return;
         }
-        let announcements = window.DB.get('announcements');
-        if (id) {
-            const index = announcements.findIndex(a => a.id === id);
-            if (index !== -1) announcements[index] = { ...announcements[index], title, content, category, updatedAt: new Date().toISOString() };
-        } else {
-            announcements.push({ id: window.DB.generateId(), title, content, category, createdAt: new Date().toISOString() });
+
+        try {
+            const old = id ? (await readCollection('announcements')).find(x => x.id === id) : null;
+            await saveRecord('announcements', {
+                title, content, category,
+                createdAt: old?.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }, id || null);
+
+            document.querySelector('.admin-announce-form')?.remove();
+            toast('Announcement saved to Firebase!', 'success');
+            await refreshAll();
+        } catch (e) {
+            resp.textContent = '✗ ' + e.message;
+            resp.style.color = 'var(--danger)';
         }
-        window.DB.set('announcements', announcements);
-        toast('Announcement saved!', 'success');
-        document.querySelector('.admin-announce-form')?.remove();
-        renderAdminAnnouncements();
-        renderPublicNoticesFull();
-        renderAdminDashboard();
-        renderHome();
     }
 
-    function deleteAdminAnnounce(id) {
-        if (!confirm('Delete this announcement?')) return;
-        let announcements = window.DB.get('announcements');
-        announcements = announcements.filter(a => a.id !== id);
-        window.DB.set('announcements', announcements);
-        toast('Deleted.', 'success');
-        renderAdminAnnouncements();
-        renderPublicNoticesFull();
-        renderAdminDashboard();
-        renderHome();
+    async function deleteAdminAnnounce(id) {
+        if (!requireAdmin() || !confirm('Delete this announcement?')) return;
+        try {
+            await deleteRecord('announcements', id);
+            toast('Announcement deleted.', 'success');
+            await refreshAll();
+        } catch (e) { toast(e.message, 'error'); }
     }
 
-    function renderAdminAnnouncements() {
+    async function renderAdminAnnouncements() {
+        if (!isAdmin) return;
         const container = document.getElementById('adminAnnouncementsList');
-        const form = document.querySelector('.admin-announce-form');
-        if (form) form.remove();
-        const announcements = window.DB.get('announcements');
-        if (announcements.length === 0) {
-            container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--gray);">No announcements.</p>';
-            return;
-        }
-        announcements.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-        container.innerHTML = announcements.map(a => `
+        const announcements = await readCollection('announcements');
+        announcements.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+        container.innerHTML = announcements.length ? announcements.map(a => `
             <div class="notice-item">
                 <div>
                     <span class="tag tag-${(a.category || 'general').toLowerCase()}">${escapeHtml(a.category || 'General')}</span>
@@ -1331,255 +1386,278 @@
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <span class="date">${formatDate(a.createdAt)}</span>
-                    <button class="btn btn-primary btn-sm" onclick="openAdminAnnounceForm(${JSON.stringify(a).replace(/"/g,'&quot;')})"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteAdminAnnounce('${a.id}')"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-primary btn-sm" onclick="openAdminAnnounceFormById('${escapeAttr(a.id)}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteAdminAnnounce('${escapeAttr(a.id)}')"><i class="fas fa-trash"></i></button>
                 </div>
-            </div>
-        `).join('');
+            </div>`).join('') : '<p style="text-align:center;padding:20px;color:var(--gray);">No announcements.</p>';
+    }
+
+    async function openAdminAnnounceFormById(id) {
+        const data = (await readCollection('announcements')).find(x => x.id === id);
+        if (data) openAdminAnnounceForm(data);
     }
 
     function openAdminCMEForm(data = null) {
+        if (!requireAdmin()) return;
         const container = document.getElementById('adminCMEList');
-        const existing = document.querySelector('.admin-cme-form');
-        if (existing) existing.remove();
+        document.querySelector('.admin-cme-form')?.remove();
+
         const form = document.createElement('div');
         form.className = 'admin-cme-form admin-form';
         form.innerHTML = `
             <h4>${data ? 'Edit CME' : 'Add CME Program'}</h4>
-            <input type="hidden" id="admCMEId" value="${data ? data.id : ''}">
-            <div class="form-group"><label>Title *</label><input type="text" id="admCMETitle" value="${data ? escapeHtml(data.title) : ''}" required></div>
-            <div class="form-group"><label>Description *</label><textarea id="admCMEDescription" rows="2" required>${data ? escapeHtml(data.description) : ''}</textarea></div>
-            <div class="form-group"><label>Date *</label><input type="date" id="admCMEDate" value="${data ? formatDateInput(data.date) : ''}" required></div>
-            <div class="form-group"><label>Venue</label><input type="text" id="admCMEVenue" value="${data ? escapeHtml(data.venue) : ''}"></div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-success" onclick="saveAdminCME()"><i class="fas fa-save"></i> Save</button><button class="btn btn-danger" onclick="this.closest('.admin-cme-form').remove()"><i class="fas fa-times"></i> Cancel</button></div>
-            <div id="admCMEResponse" class="mt-10" style="font-weight:600;"></div>
-        `;
+            <input type="hidden" id="admCMEId" value="${escapeAttr(data?.id || '')}">
+            <div class="form-group"><label>Title *</label><input type="text" id="admCMETitle" value="${escapeAttr(data?.title || '')}" required></div>
+            <div class="form-group"><label>Description *</label><textarea id="admCMEDescription" rows="2" required>${escapeHtml(data?.description || '')}</textarea></div>
+            <div class="form-group"><label>Date *</label><input type="date" id="admCMEDate" value="${escapeAttr(formatDateInput(data?.date))}" required></div>
+            <div class="form-group"><label>Venue</label><input type="text" id="admCMEVenue" value="${escapeAttr(data?.venue || '')}"></div>
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-success" onclick="saveAdminCME()"><i class="fas fa-save"></i> Save</button>
+                <button class="btn btn-danger" onclick="this.closest('.admin-cme-form').remove()">Cancel</button>
+            </div>
+            <div id="admCMEResponse" class="mt-10"></div>`;
         container.prepend(form);
     }
 
-    function saveAdminCME() {
+    async function saveAdminCME() {
+        if (!requireAdmin()) return;
         const resp = document.getElementById('admCMEResponse');
-        resp.textContent = '';
         const id = document.getElementById('admCMEId').value;
         const title = document.getElementById('admCMETitle').value.trim();
         const description = document.getElementById('admCMEDescription').value.trim();
         const date = document.getElementById('admCMEDate').value;
         const venue = document.getElementById('admCMEVenue').value.trim();
+
         if (!title || !description || !date) {
             resp.textContent = '✗ Please fill in all required fields.';
             resp.style.color = 'var(--danger)';
             return;
         }
-        let cme = window.DB.get('cme');
-        if (id) {
-            const index = cme.findIndex(c => c.id === id);
-            if (index !== -1) cme[index] = { ...cme[index], title, description, date, venue, updatedAt: new Date().toISOString() };
-        } else {
-            cme.push({ id: window.DB.generateId(), title, description, date, venue, createdAt: new Date().toISOString() });
+
+        try {
+            const old = id ? (await readCollection('cme')).find(x => x.id === id) : null;
+            await saveRecord('cme', {
+                title, description, date, venue,
+                createdAt: old?.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }, id || null);
+
+            document.querySelector('.admin-cme-form')?.remove();
+            toast('CME saved to Firebase!', 'success');
+            await refreshAll();
+        } catch (e) {
+            resp.textContent = '✗ ' + e.message;
+            resp.style.color = 'var(--danger)';
         }
-        window.DB.set('cme', cme);
-        toast('CME saved!', 'success');
-        document.querySelector('.admin-cme-form')?.remove();
-        renderAdminCME();
-        renderPublicCME();
-        renderAdminDashboard();
-        renderHome();
     }
 
-    function deleteAdminCME(id) {
-        if (!confirm('Delete this CME program?')) return;
-        let cme = window.DB.get('cme');
-        cme = cme.filter(c => c.id !== id);
-        window.DB.set('cme', cme);
-        toast('Deleted.', 'success');
-        renderAdminCME();
-        renderPublicCME();
-        renderAdminDashboard();
+    async function deleteAdminCME(id) {
+        if (!requireAdmin() || !confirm('Delete this CME program?')) return;
+        try {
+            await deleteRecord('cme', id);
+            toast('CME deleted.', 'success');
+            await refreshAll();
+        } catch (e) { toast(e.message, 'error'); }
     }
 
-    function renderAdminCME() {
+    async function renderAdminCME() {
+        if (!isAdmin) return;
         const container = document.getElementById('adminCMEList');
-        const form = document.querySelector('.admin-cme-form');
-        if (form) form.remove();
-        const cme = window.DB.get('cme');
-        if (cme.length === 0) {
-            container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--gray);">No CME programs.</p>';
-            return;
-        }
-        cme.sort((a,b) => new Date(b.date) - new Date(a.date));
-        container.innerHTML = cme.map(c => {
+        const cme = await readCollection('cme');
+        cme.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+        container.innerHTML = cme.length ? cme.map(c => {
             const isPast = new Date(c.date) < new Date();
-            return `
-                <div class="card" style="border-top-color:${isPast ? 'var(--gray)' : 'var(--success)'};">
-                    <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:10px;">
-                        <div>
-                            <span class="status-badge ${isPast ? 'status-inactive' : 'status-active'}">${isPast ? 'Past' : 'Upcoming'}</span>
-                            <h4 style="margin-top:8px;">${escapeHtml(c.title)}</h4>
-                            <p style="color:var(--gray);font-size:14px;">${escapeHtml(c.description)}</p>
-                            <small style="color:var(--gray);"><i class="fas fa-calendar-alt"></i> ${formatDate(c.date)} ${c.venue ? '| 📍 ' + escapeHtml(c.venue) : ''}</small>
-                        </div>
-                        <div style="display:flex;gap:8px;"><button class="btn btn-primary btn-sm" onclick="openAdminCMEForm(${JSON.stringify(c).replace(/"/g,'&quot;')})"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="deleteAdminCME('${c.id}')"><i class="fas fa-trash"></i></button></div>
+            return `<div class="card" style="border-top-color:${isPast ? 'var(--gray)' : 'var(--success)'};">
+                <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                    <div>
+                        <span class="status-badge ${isPast ? 'status-inactive' : 'status-active'}">${isPast ? 'Past' : 'Upcoming'}</span>
+                        <h4 style="margin-top:8px;">${escapeHtml(c.title)}</h4>
+                        <p style="color:var(--gray);font-size:14px;">${escapeHtml(c.description)}</p>
+                        <small style="color:var(--gray);"><i class="fas fa-calendar-alt"></i> ${formatDate(c.date)} ${c.venue ? '| 📍 ' + escapeHtml(c.venue) : ''}</small>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary btn-sm" onclick="openAdminCMEFormById('${escapeAttr(c.id)}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteAdminCME('${escapeAttr(c.id)}')"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
-            `;
-        }).join('');
+            </div>`;
+        }).join('') : '<p style="text-align:center;padding:20px;color:var(--gray);">No CME programs.</p>';
+    }
+
+    async function openAdminCMEFormById(id) {
+        const data = (await readCollection('cme')).find(x => x.id === id);
+        if (data) openAdminCMEForm(data);
     }
 
     function openAdminGalleryForm(data = null) {
+        if (!requireAdmin()) return;
         const container = document.getElementById('adminGalleryGrid');
-        const existing = document.querySelector('.admin-gallery-form');
-        if (existing) existing.remove();
+        document.querySelector('.admin-gallery-form')?.remove();
+        window._galleryFile = null;
+
         const form = document.createElement('div');
         form.className = 'admin-gallery-form admin-form';
         form.style.gridColumn = '1 / -1';
         form.innerHTML = `
             <h4>${data ? 'Edit Image' : 'Add Gallery Image'}</h4>
-            <input type="hidden" id="admGalleryId" value="${data ? data.id : ''}">
-            <div class="form-group"><label>Title</label><input type="text" id="admGTitle" value="${data ? escapeHtml(data.title) : ''}"></div>
+            <input type="hidden" id="admGalleryId" value="${escapeAttr(data?.id || '')}">
+            <div class="form-group"><label>Title</label><input type="text" id="admGTitle" value="${escapeAttr(data?.title || '')}"></div>
             <div class="form-group">
                 <label>Image ${data ? '(Leave empty to keep current)' : '*'}</label>
-                <div class="photo-upload" onclick="document.getElementById('admGImageInput').click()"><i class="fas fa-image"></i><p>Click to upload image</p></div>
+                <div class="photo-upload" onclick="document.getElementById('admGImageInput').click()">
+                    <i class="fas fa-image"></i><p>Click to upload image</p>
+                </div>
                 <input type="file" id="admGImageInput" accept="image/*" style="display:none;">
-                <div class="photo-preview" id="admGPreview">${data && data.imageBase64 ? `<img src="${data.imageBase64}" alt="Current">` : ''}</div>
+                <div class="photo-preview" id="admGPreview">${data?.imageURL ? `<img src="${escapeAttr(data.imageURL)}" alt="Current">` : ''}</div>
             </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-success" onclick="saveAdminGallery()"><i class="fas fa-save"></i> Save</button><button class="btn btn-danger" onclick="this.closest('.admin-gallery-form').remove()"><i class="fas fa-times"></i> Cancel</button></div>
-            <div id="admGalleryResponse" class="mt-10" style="font-weight:600;"></div>
-        `;
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-success" onclick="saveAdminGallery()"><i class="fas fa-save"></i> Save</button>
+                <button class="btn btn-danger" onclick="this.closest('.admin-gallery-form').remove()">Cancel</button>
+            </div>
+            <div id="admGalleryResponse" class="mt-10"></div>`;
+
         container.prepend(form);
-        document.getElementById('admGImageInput').addEventListener('change', function(e) {
+
+        document.getElementById('admGImageInput').addEventListener('change', e => {
             const file = e.target.files[0];
             if (!file) return;
+            window._galleryFile = file;
             const reader = new FileReader();
-            reader.onload = (ev) => {
-                document.getElementById('admGPreview').innerHTML = `<img src="${ev.target.result}" alt="Preview">`;
-                window._galleryFile = file;
-            };
+            reader.onload = ev => document.getElementById('admGPreview').innerHTML = `<img src="${ev.target.result}" alt="Preview">`;
             reader.readAsDataURL(file);
         });
     }
 
     async function saveAdminGallery() {
+        if (!requireAdmin()) return;
+
         const resp = document.getElementById('admGalleryResponse');
-        resp.textContent = '';
         const id = document.getElementById('admGalleryId').value;
         const title = document.getElementById('admGTitle').value.trim() || 'Gallery Image';
         const file = window._galleryFile;
-        let gallery = window.DB.get('gallery');
-        if (id) {
-            const index = gallery.findIndex(g => g.id === id);
-            if (index !== -1) {
-                if (file) {
-                    const imageBase64 = await compressImage(file, 600, 0.8);
-                    gallery[index] = { ...gallery[index], title, imageBase64, updatedAt: new Date().toISOString() };
-                } else {
-                    gallery[index] = { ...gallery[index], title, updatedAt: new Date().toISOString() };
-                }
+
+        try {
+            const gallery = await readCollection('gallery');
+            const old = id ? gallery.find(x => x.id === id) : null;
+
+            let imageURL = old?.imageURL || '';
+            let storagePath = old?.storagePath || '';
+
+            if (file) {
+                if (!file.type.startsWith('image/')) throw new Error('Please select an image file.');
+                if (file.size > 10 * 1024 * 1024) throw new Error('Gallery image must be smaller than 10 MB.');
+
+                const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                storagePath = `gallery/${Date.now()}_${safeName}`;
+                const sRef = storageRef(storage, storagePath);
+                await uploadBytes(sRef, file, { contentType: file.type });
+                imageURL = await getDownloadURL(sRef);
+
+                if (old?.imageURL) await deleteStorageFile(old.imageURL);
             }
-        } else {
-            if (!file) {
-                resp.textContent = '✗ Please select an image.';
-                resp.style.color = 'var(--danger)';
-                return;
-            }
-            const imageBase64 = await compressImage(file, 600, 0.8);
-            gallery.push({ id: window.DB.generateId(), title, imageBase64, createdAt: new Date().toISOString() });
+
+            if (!imageURL) throw new Error('Please select an image.');
+
+            await saveRecord('gallery', {
+                title, imageURL, storagePath,
+                createdAt: old?.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }, id || null);
+
+            document.querySelector('.admin-gallery-form')?.remove();
+            window._galleryFile = null;
+            toast('Gallery image saved to Firebase Storage!', 'success');
+            await refreshAll();
+        } catch (e) {
+            console.error(e);
+            resp.textContent = '✗ ' + e.message;
+            resp.style.color = 'var(--danger)';
         }
-        window.DB.set('gallery', gallery);
-        toast('Gallery saved!', 'success');
-        document.querySelector('.admin-gallery-form')?.remove();
-        window._galleryFile = null;
-        renderAdminGallery();
-        renderPublicGallery();
-        renderAdminDashboard();
-        renderHome();
     }
 
-    function deleteAdminGallery(id) {
-        if (!confirm('Delete this image?')) return;
-        let gallery = window.DB.get('gallery');
-        gallery = gallery.filter(g => g.id !== id);
-        window.DB.set('gallery', gallery);
-        toast('Image deleted.', 'success');
-        renderAdminGallery();
-        renderPublicGallery();
-        renderAdminDashboard();
+    async function deleteAdminGallery(id) {
+        if (!requireAdmin() || !confirm('Delete this image permanently?')) return;
+        try {
+            const gallery = await readCollection('gallery');
+            const item = gallery.find(g => g.id === id);
+            await deleteRecord('gallery', id);
+            if (item?.imageURL) await deleteStorageFile(item.imageURL);
+            toast('Gallery image deleted.', 'success');
+            await refreshAll();
+        } catch (e) { toast(e.message, 'error'); }
     }
 
-    function renderAdminGallery() {
+    async function renderAdminGallery() {
+        if (!isAdmin) return;
         const container = document.getElementById('adminGalleryGrid');
-        const form = document.querySelector('.admin-gallery-form');
-        if (form) form.remove();
-        const gallery = window.DB.get('gallery');
-        if (gallery.length === 0) {
+        const gallery = await readCollection('gallery');
+        gallery.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+        if (!gallery.length) {
             container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--gray);">No images in gallery.</div>';
             return;
         }
-        gallery.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
         container.innerHTML = gallery.map(g => `
             <div class="gallery-item">
-                <img src="${g.imageBase64}" alt="${escapeHtml(g.title)}" loading="lazy">
-                <div class="overlay">${escapeHtml(g.title)}</div>
-                <div style="position:absolute;top:10px;right:10px;display:flex;gap:5px;opacity:0;transition:all 0.3s;">
-                    <button class="btn btn-primary btn-sm" onclick="openAdminGalleryForm(${JSON.stringify(g).replace(/"/g,'&quot;')})" style="background:rgba(11,94,215,0.9);color:white;"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteAdminGallery('${g.id}')" style="background:rgba(220,53,69,0.9);color:white;"><i class="fas fa-trash"></i></button>
+                <img src="${escapeAttr(g.imageURL)}" alt="${escapeAttr(g.title || '')}" loading="lazy">
+                <div class="overlay">${escapeHtml(g.title || '')}</div>
+                <div style="position:absolute;top:10px;right:10px;display:flex;gap:5px;">
+                    <button class="btn btn-primary btn-sm" onclick="openAdminGalleryFormById('${escapeAttr(g.id)}')" style="background:rgba(11,94,215,0.9);color:white;"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteAdminGallery('${escapeAttr(g.id)}')" style="background:rgba(220,53,69,0.9);color:white;"><i class="fas fa-trash"></i></button>
                 </div>
-            </div>
-        `).join('');
-        document.querySelectorAll('#adminGalleryGrid .gallery-item').forEach(item => {
-            item.addEventListener('mouseenter', () => {
-                item.querySelector('div[style*="position:absolute"]').style.opacity = '1';
-            });
-            item.addEventListener('mouseleave', () => {
-                item.querySelector('div[style*="position:absolute"]').style.opacity = '0';
-            });
-        });
+            </div>`).join('');
     }
 
-    // UTILITY
+    async function openAdminGalleryFormById(id) {
+        const data = (await readCollection('gallery')).find(x => x.id === id);
+        if (data) openAdminGalleryForm(data);
+    }
+
+    async function refreshAll() {
+        await Promise.all([
+            renderHome(),
+            renderPublicMembers(),
+            renderPublicGallery(),
+            renderPublicNoticesFull(),
+            renderPublicCME()
+        ]);
+
+        if (isAdmin) {
+            await Promise.all([
+                renderAdminDashboard(),
+                renderAdminMembers(),
+                renderAdminAnnouncements(),
+                renderAdminCME(),
+                renderAdminGallery()
+            ]);
+        }
+    }
+
     function escapeHtml(s) {
-        if (!s) return '—';
+        if (s === null || s === undefined || s === '') return '—';
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
     }
+
+    function escapeAttr(s) {
+        return String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#039;');
+    }
+
     function formatDate(d) {
         if (!d) return '—';
-        try {
-            const date = new Date(d);
-            if (!isNaN(date)) return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-            return '—';
-        } catch { return '—'; }
+        const date = new Date(d);
+        return isNaN(date) ? '—' : date.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
     }
+
     function formatDateInput(d) {
         if (!d) return '';
-        try {
-            const date = new Date(d);
-            if (!isNaN(date)) return date.toISOString().split('T')[0];
-            return '';
-        } catch { return ''; }
+        const date = new Date(d);
+        return isNaN(date) ? '' : date.toISOString().split('T')[0];
     }
-    function compressImage(file, maxDim = 300, quality = 0.7) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (e) => {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height;
-                    if (w > maxDim || h > maxDim) {
-                        if (w > h) { h = (h / w) * maxDim; w = maxDim; }
-                        else { w = (w / h) * maxDim; h = maxDim; }
-                    }
-                    canvas.width = w; canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
-                };
-            };
-        });
-    }
+
     function toast(msg, type = 'info') {
-        const existing = document.querySelector('.toast');
-        if (existing) existing.remove();
+        document.querySelector('.toast')?.remove();
         const t = document.createElement('div');
         t.className = `toast toast-${type}`;
         t.textContent = msg;
@@ -1591,29 +1669,34 @@
         }, 4000);
     }
 
-    // INIT
-    document.addEventListener('DOMContentLoaded', function() {
-        // Seed initial data if empty
-        if (window.DB.get('members').length === 0) {
-            window.DB.set('members', [
-                { id: window.DB.generateId(), name: 'Dr. U G Hiremath', mobile: '9448578827', qualification: 'BAMS', regno: 'AFI-001', address: 'Belagavi', status: 'active', createdAt: new Date(Date.now() - 86400000 * 30).toISOString() },
-                { id: window.DB.generateId(), name: 'Dr. Yogesh Sabnis', mobile: '9343060007', qualification: 'BHMS', regno: 'AFI-002', address: 'Belagavi', status: 'active', createdAt: new Date(Date.now() - 86400000 * 15).toISOString() }
-            ]);
+    // Make functions available to the existing inline HTML handlers.
+    Object.assign(window, {
+        toggleMobileMenu, navigateTo, renderPublicMembers, filterMembers,
+        renderPublicGallery, openLightbox, closeLightbox,
+        renderPublicNoticesFull, renderPublicCME,
+        openRegistration, closeRegistration,
+        openAdmin, closeAdmin, adminLogin, adminLogout,
+        showAdminTab, renderAdminDashboard,
+        openAdminMemberForm, openAdminMemberFormById, saveAdminMember, deleteAdminMember,
+        renderAdminMembers,
+        openAdminAnnounceForm, openAdminAnnounceFormById, saveAdminAnnounce, deleteAdminAnnounce,
+        renderAdminAnnouncements,
+        openAdminCMEForm, openAdminCMEFormById, saveAdminCME, deleteAdminCME,
+        renderAdminCME,
+        openAdminGalleryForm, openAdminGalleryFormById, saveAdminGallery, deleteAdminGallery,
+        renderAdminGallery
+    });
+
+    // Initial public rendering.
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            await renderHome();
+            console.log('🔥 AFI Firebase connected');
+            console.log('📊 Members, announcements, CME and gallery are stored in Firebase Realtime Database.');
+            console.log('🖼️ Gallery/member images are stored in Firebase Storage.');
+        } catch (e) {
+            console.error('Initial Firebase load failed:', e);
         }
-        if (window.DB.get('announcements').length === 0) {
-            window.DB.set('announcements', [
-                { id: window.DB.generateId(), title: 'Welcome to AFI Belagavi', content: 'We are excited to announce the official launch of AFI Belagavi Taluka. Join us in our mission to promote AYUSH healthcare.', category: 'General', createdAt: new Date(Date.now() - 86400000 * 20).toISOString() }
-            ]);
-        }
-        if (window.DB.get('cme').length === 0) {
-            window.DB.set('cme', [
-                { id: window.DB.generateId(), title: 'Recent Advances in Ayurveda', description: 'A comprehensive CME program covering the latest developments in Ayurvedic medicine and research.', date: new Date(Date.now() + 86400000 * 30).toISOString().split('T')[0], venue: 'Belagavi Medical Hall', createdAt: new Date().toISOString() }
-            ]);
-        }
-        renderHome();
-        console.log('✅ AFI Belagavi Website Loaded');
-        console.log('👤 Admin: admin@afi.org / admin123');
-        console.log('📊 Data stored in localStorage + Firebase sync');
     });
 </script>
 </body>
